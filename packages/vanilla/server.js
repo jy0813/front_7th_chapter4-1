@@ -1,11 +1,16 @@
 import fs from "node:fs/promises";
 import express from "express";
+import { server as mswServer } from "./src/mocks/server.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 const port = process.env.PORT || 5173;
 const base = process.env.BASE || (isProduction ? "/front_7th_chapter4-1/vanilla/" : "/");
 
 const templateHtml = isProduction ? await fs.readFile("./dist/vanilla/index.html", "utf-8") : "";
+
+mswServer.listen({
+  onUnhandledRequest: "bypass",
+});
 
 const app = express();
 
@@ -40,14 +45,14 @@ app.use("*all", async (req, res) => {
       render = (await import("./dist/vanilla-ssr/main-server.js")).render;
     }
 
-    const rendered = await render(url, req.query);
+    const { html, head, initialDataScript } = await render(url, req.query);
 
-    const html = template
-      .replace("<!--app-head-->", rendered.head ?? "")
-      .replace("<!--app-html-->", rendered.html ?? "")
-      .replace("</head>", `${rendered.script ?? ""}</head>`);
+    const finalHtml = template
+      .replace("<!--app-head-->", head ?? "")
+      .replace("<!--app-html-->", html ?? "")
+      .replace("</head>", `${initialDataScript ?? ""}</head>`);
 
-    res.status(200).set({ "Content-Type": "text/html" }).send(html);
+    res.status(200).set({ "Content-Type": "text/html" }).send(finalHtml);
   } catch (e) {
     vite?.ssrFixStacktrace(e);
     console.log(e.stack);
