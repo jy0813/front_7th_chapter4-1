@@ -142,12 +142,16 @@ const productReducer = (state: typeof initialProductState, action: any) => {
 const getHydratedState = (): typeof initialProductState => {
   // 서버 환경에서는 기본 상태 반환
   if (typeof window === "undefined") {
+    console.log("[Hydration] 서버 환경 - 기본 상태 반환");
     return initialProductState;
   }
 
   // 클라이언트에서 SSR 데이터로 초기화
   const initialData = window.__INITIAL_DATA__;
+  console.log("[Hydration] window.__INITIAL_DATA__:", initialData);
+
   if (!initialData) {
+    console.log("[Hydration] SSR 데이터 없음 - 기본 상태 반환");
     return initialProductState;
   }
 
@@ -162,6 +166,12 @@ const getHydratedState = (): typeof initialProductState => {
     loading: false,
     status: "done" as const,
   };
+
+  console.log("[Hydration] SSR 데이터로 초기화 완료:", {
+    productsCount: hydratedState.products.length,
+    hasCurrentProduct: !!hydratedState.currentProduct,
+    status: hydratedState.status,
+  });
 
   // 데이터 사용 후 정리 (중복 hydration 방지)
   delete window.__INITIAL_DATA__;
